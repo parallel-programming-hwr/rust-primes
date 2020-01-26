@@ -4,10 +4,10 @@ A simple program that calculates prime numbers with multithreading. The resultin
 
 ## Usage
 
-```
+```bash
 # compile
-cargo build
+cargo build --release
 
 # run
-./target/debug/primes [<start number>]
+./target/release/primes [<start number>]
 ```
