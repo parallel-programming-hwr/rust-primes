@@ -6,12 +6,12 @@ use std::sync::mpsc::{sync_channel, SyncSender};
 use std::env;
 
 fn main() {
-    let (tx, rx) = sync_channel::<u64>(0);
-    let num_threads: u64 = num_cpus::get() as u64;
-    let mut start: u64 = 1;
+    let (tx, rx) = sync_channel::<u128>(0);
+    let num_threads: u16 = num_cpus::get() as u16;
+    let mut start: u128 = 1;
     let args: Vec<String> = env::args().collect();
     if args.len() > 1 {
-        start = *(&args[1].parse::<u64>().unwrap());
+        start = *(&args[1].parse::<u128>().unwrap());
     }
     if &start % 2 == 0 {
         start += 1;
@@ -23,10 +23,10 @@ fn main() {
         .open("primes.txt")
         .unwrap();
     println!("Starting {} threads", num_threads);
-    for i in 0u64..num_threads {
+    for i in 0u16..num_threads {
         let tx = tx.clone();
         let _child = thread::spawn(move || {
-            get_primes(&start + (2*&i), &num_threads * 2, &tx);
+            get_primes(&start + (2*&i) as u128, (&num_threads * 2) as u16, &tx);
         });
     }
     loop {
@@ -38,15 +38,15 @@ fn main() {
     }
 }
 
-fn get_primes(start: u64, incr: u64, tx: &SyncSender<u64>) {
+fn get_primes(start: u128, incr: u16, tx: &SyncSender<u128>) {
     let mut num = start;
     loop {
         let mut is_prime = true;
         if (num < 3) | (&num % 2 == 0) {
-            num += incr;
+            num += incr as u128;
             continue;
         }
-        for i in (3u64..&num/2).step_by(2) {
+        for i in (3u128..&num/2).step_by(2) {
             if &num % i == 0 {
                 is_prime = false;
             }
@@ -56,6 +56,6 @@ fn get_primes(start: u64, incr: u64, tx: &SyncSender<u64>) {
                 panic!(e);
             }
         }
-        num += incr;
+        num += incr as u128;
     }
 }
