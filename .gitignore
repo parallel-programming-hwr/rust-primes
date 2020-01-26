@@ -1,0 +1,4 @@
+/target
+**/*.rs.bk
+primes.txt
+*.tar.gz
