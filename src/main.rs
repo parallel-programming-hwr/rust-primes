@@ -1,61 +1,68 @@
-extern crate num_cpus;
-use std::thread;
+use num_cpus;
 use std::fs::{OpenOptions};
 use std::io::prelude::*;
-use std::sync::mpsc::{sync_channel, SyncSender};
 use std::env;
+use std::time::{Instant};
+use std::io::BufWriter;
+use may::sync::mpmc::{channel, Sender};
+use may::go;
 
 fn main() {
-    let (tx, rx) = sync_channel::<u128>(0);
+    may::config().set_workers(num_cpus::get());
+    let (tx, rx) = channel::<u64>();
     let num_threads: u16 = num_cpus::get() as u16;
-    let mut start: u128 = 1;
+    let mut start: u64 = 1;
     let args: Vec<String> = env::args().collect();
     if args.len() > 1 {
-        start = *(&args[1].parse::<u128>().unwrap());
+        start = args[1].parse::<u64>().unwrap();
     }
     if &start % 2 == 0 {
         start += 1;
     }
-    let mut file = OpenOptions::new()
+    let file = OpenOptions::new()
         .write(true)
         .append(true)
         .create(true)
         .open("primes.txt")
         .unwrap();
+    let mut buffer = BufWriter::new(file);
     println!("Starting {} threads", num_threads);
     for i in 0u16..num_threads {
         let tx = tx.clone();
-        let _child = thread::spawn(move || {
-            get_primes(&start + (2*&i) as u128, (&num_threads * 2) as u16, &tx);
+        go!(move || {
+            get_primes(start + (2 * &i) as u64, (&num_threads * 2) as u64, &tx);
         });
+        println!("Started thread {}", i);
     }
+    let time_start = Instant::now();
+    let mut prime_count = 0;
     loop {
         let prime = rx.recv().unwrap();
-        println!("{}", prime);
-        if let Err(e) = writeln!(file, "{}", prime) {
+        prime_count += 1;
+        println!("\r{: <30}", prime);
+        print!("{} Primes/s", prime_count as f64/time_start.elapsed().as_secs_f64());
+        if let Err(e) = buffer.write(&format!("{}\n", prime).into_bytes()) {
             panic!(e);
         }
     }
 }
 
-fn get_primes(start: u128, incr: u16, tx: &SyncSender<u128>) {
+fn get_primes(start: u64, incr: u64, tx: &Sender<u64>) {
     let mut num = start;
     loop {
         let mut is_prime = true;
         if (num < 3) | (&num % 2 == 0) {
-            num += incr as u128;
+            num += incr;
             continue;
         }
-        for i in (3u128..&num/2).step_by(2) {
-            if &num % i == 0 {
+        for i in (3u64..&num/2).step_by(2) {
+            if num % i == 0 {
                 is_prime = false;
             }
         }
         if is_prime {
-            if let Err(e) = (*tx).send(num) {
-                panic!(e);
-            }
+            tx.send(num).unwrap();
         }
-        num += incr as u128;
+        num += incr;
     }
 }
