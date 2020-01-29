@@ -1,11 +1,11 @@
-use num_cpus;
-use std::fs::{OpenOptions};
-use std::io::prelude::*;
-use std::env;
-use std::time::{Instant};
-use std::io::BufWriter;
-use may::sync::mpmc::{channel, Sender};
 use may::go;
+use may::sync::mpmc::{channel, Sender};
+use num_cpus;
+use std::env;
+use std::fs::OpenOptions;
+use std::io::prelude::*;
+use std::io::BufWriter;
+use std::time::Instant;
 
 fn main() {
     may::config().set_workers(num_cpus::get());
@@ -40,7 +40,10 @@ fn main() {
         let prime = rx.recv().unwrap();
         prime_count += 1;
         println!("\r{: <30}", prime);
-        print!("{} Primes/s", prime_count as f64/time_start.elapsed().as_secs_f64());
+        print!(
+            "{} Primes/s",
+            prime_count as f64 / time_start.elapsed().as_secs_f64()
+        );
         if let Err(e) = buffer.write(&format!("{}\n", prime).into_bytes()) {
             panic!(e);
         }
@@ -48,6 +51,7 @@ fn main() {
 }
 
 fn get_primes(start: u64, incr: u64, tx: &Sender<u64>) {
+    println!("Hi, I'm a thread.");
     let mut num = start;
     loop {
         let mut is_prime = true;
@@ -55,7 +59,7 @@ fn get_primes(start: u64, incr: u64, tx: &Sender<u64>) {
             num += incr;
             continue;
         }
-        for i in (3u64..&num/2).step_by(2) {
+        for i in (3u64..&num / 2).step_by(2) {
             if num % i == 0 {
                 is_prime = false;
             }
