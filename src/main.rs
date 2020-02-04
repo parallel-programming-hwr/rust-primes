@@ -1,10 +1,10 @@
 use may::go;
-use may::sync::mpmc::{channel, Sender};
 use num_cpus;
 use std::env;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
 use std::io::BufWriter;
+use std::sync::mpsc::{channel, Sender};
 use std::time::Instant;
 
 fn main() {
@@ -51,17 +51,18 @@ fn main() {
 }
 
 fn get_primes(start: u64, incr: u64, tx: &Sender<u64>) {
-    println!("Hi, I'm a thread.");
     let mut num = start;
     loop {
         let mut is_prime = true;
-        if (num < 3) | (&num % 2 == 0) {
+        if (num < 3) | (num % 2 == 0) {
             num += incr;
             continue;
         }
-        for i in (3u64..&num / 2).step_by(2) {
+        let max = (num as f64).sqrt().ceil() as u64;
+        for i in (3u64..=max).step_by(2) {
             if num % i == 0 {
                 is_prime = false;
+                break;
             }
         }
         if is_prime {

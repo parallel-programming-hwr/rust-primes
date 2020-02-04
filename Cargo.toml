@@ -8,4 +8,4 @@ edition = "2018"
 
 [dependencies]
 num_cpus = "1.0"
-may = "0.3.14"
+may = "0.3.15"
